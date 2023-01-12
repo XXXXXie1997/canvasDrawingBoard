@@ -1,7 +1,8 @@
 <template>
+  <div>还没有样式的工具栏</div>
   <div>
-    <ElButton size="small" @click="undo">←</ElButton>
-    <ElButton size="small" @click="redo">→</ElButton>
+    <ElButton size="small" @click="undo">撤销</ElButton>
+    <ElButton size="small" @click="redo">前进</ElButton>
 
     <ElForm>
       <ElFormItem label="笔刷大小">

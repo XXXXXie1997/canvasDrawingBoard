@@ -10,6 +10,7 @@
     <div class="main">
       <div class="canvasWrapper" ref="canvasWrapper">
         <canvas ref="canvas" style="background: #fafafa"></canvas>
+        <canvas ref="cache" style="display: none"></canvas>
       </div>
     </div>
   </div>
@@ -51,23 +52,31 @@ const computedOptions = computed(() => {
     fillStyle: options.value.color,
     strokeStyle: options.value.color,
     shadowColor: options.value.color,
-    shadowBlur:
-      options.value.lineWidth < 3 ? 1 : options.value.lineWidth < 9 ? 2 : 3,
+    shadowBlur: 2,
   };
 });
 const options = ref<IAnyObject>({});
 const optionChange = (option: IAnyObject) => {
   options.value = option;
 };
+const cache = ref();
+const cacheContext = ref<CanvasRenderingContext2D>({});
+const setCache = async (imgSrc: any) => {
+  cache.value.width = canvas.value.width;
+  cache.value.height = canvas.value.height;
+  cacheContext.value = cache.value.getContext("2d");
+  cacheContext.value.drawImage(imgSrc, 0, 0);
+};
 const undo = () => {
   if (step.value > 0) {
     step.value--;
-    context.value.clearRect(0, 0, canvas.value.width, canvas.value.height);
     let canvasPic = new Image();
     canvasPic.src = canvasHistory.value[step.value];
-    canvasPic.addEventListener("load", () => {
-      context.value.drawImage(canvasPic, 0, 0);
-    });
+    canvasPic.onload = () => {
+      setCache(canvasPic);
+      context.value.clearRect(0, 0, canvas.value.width, canvas.value.height);
+      context.value.drawImage(cache.value, 0, 0);
+    };
   } else {
     console.log("到头了");
   }
@@ -78,10 +87,10 @@ const redo = () => {
     step.value++;
     let canvasPic = new Image();
     canvasPic.src = canvasHistory.value[step.value];
-    canvasPic.addEventListener("load", () => {
+    canvasPic.onload = () => {
       context.value.clearRect(0, 0, canvas.value.width, canvas.value.height);
       context.value.drawImage(canvasPic, 0, 0);
-    });
+    };
   } else {
     console.log("已经是最新的记录了");
   }
@@ -147,7 +156,7 @@ onMounted(() => {
   .aside {
     width: 200px;
     height: 100%;
-    border: 1px solid red;
+    border-right: 2px solid #aaaaaaaa;
   }
   .main {
     height: 100%;
