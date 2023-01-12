@@ -51,8 +51,6 @@ const computedOptions = computed(() => {
     lineWidth: options.value.lineWidth,
     fillStyle: options.value.color,
     strokeStyle: options.value.color,
-    shadowColor: options.value.color,
-    shadowBlur: 2,
   };
 });
 const options = ref<IAnyObject>({});
