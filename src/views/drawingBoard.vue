@@ -1,7 +1,11 @@
 <template>
   <div class="container">
     <div class="aside">
-      <ToolList @on-option-change="optionChange"></ToolList>
+      <ToolList
+        @on-option-change="optionChange"
+        @redo="redo"
+        @undo="undo"
+      ></ToolList>
     </div>
     <div class="main">
       <div class="canvasWrapper" ref="canvasWrapper">
@@ -12,40 +16,85 @@
 </template>
 <script lang="ts" setup>
 import ToolList from "@/components/toolList.vue";
-import { ref, onMounted } from "vue";
+import { ref, onMounted, computed, watch } from "vue";
 import { IAnyObject } from "@/interface/IAnyObject";
 
 const canvas = ref();
 const canvasWrapper = ref();
-const drawOption = ref<IAnyObject>({});
 const context = ref<CanvasRenderingContext2D>({});
 const lastPoint = ref<{ x: number; y: number }>({ x: 0, y: 0 });
 const painting = ref<boolean>(false);
-
+const canvasHistory = ref<string[]>([]);
+const step = ref(0);
 const drawCircle = (x: number, y: number, radius: number) => {
   context.value.beginPath();
   context.value.arc(x, y, radius, 0, Math.PI * 2);
   context.value.fill();
   context.value.closePath();
 };
-
 const drawLine = (x1: number, y1: number, x2: number, y2: number) => {
   context.value.beginPath();
   context.value.moveTo(x1, y1);
   context.value.lineTo(x2, y2);
   context.value.stroke();
 };
-
+const saveHistory = () => {
+  step.value++;
+  if (step.value < canvasHistory.value.length) {
+    canvasHistory.value.length = step.value; // 截断数组
+  }
+  canvasHistory.value.push(canvas.value.toDataURL());
+};
+const computedOptions = computed(() => {
+  return {
+    lineWidth: options.value.lineWidth,
+    fillStyle: options.value.color,
+    strokeStyle: options.value.color,
+    shadowColor: options.value.color,
+    shadowBlur:
+      options.value.lineWidth < 3 ? 1 : options.value.lineWidth < 9 ? 2 : 3,
+  };
+});
+const options = ref<IAnyObject>({});
 const optionChange = (option: IAnyObject) => {
-  for (let key in option) {
-    context.value[key] = option[key];
+  options.value = option;
+};
+const undo = () => {
+  if (step.value > 0) {
+    step.value--;
+    context.value.clearRect(0, 0, canvas.value.width, canvas.value.height);
+    let canvasPic = new Image();
+    canvasPic.src = canvasHistory.value[step.value];
+    canvasPic.addEventListener("load", () => {
+      context.value.drawImage(canvasPic, 0, 0);
+    });
+  } else {
+    console.log("到头了");
   }
 };
+
+const redo = () => {
+  if (step.value < canvasHistory.value.length - 1) {
+    step.value++;
+    let canvasPic = new Image();
+    canvasPic.src = canvasHistory.value[step.value];
+    canvasPic.addEventListener("load", () => {
+      context.value.clearRect(0, 0, canvas.value.width, canvas.value.height);
+      context.value.drawImage(canvasPic, 0, 0);
+    });
+  } else {
+    console.log("已经是最新的记录了");
+  }
+};
+
 const init = () => {
   canvas.value.width = canvasWrapper.value.clientWidth - 40;
   canvas.value.height = canvasWrapper.value.clientHeight - 40;
   context.value = canvas.value.getContext("2d");
   context.value.lineWidth = 2;
+  context.value.shadowBlur = 1;
+};
+const initMouseEvent = () => {
   canvas.value.onmousedown = (e) => {
     painting.value = true;
     lastPoint.value = { x: e.clientX, y: e.clientY };
@@ -69,12 +118,25 @@ const init = () => {
   };
 
   canvas.value.onmouseup = () => {
+    saveHistory();
     painting.value = false;
   };
 };
+
+watch(
+  () => {
+    return computedOptions.value;
+  },
+  () => {
+    for (let key in computedOptions.value) {
+      context.value[key] = computedOptions.value[key];
+    }
+  }
+);
 onMounted(() => {
   init();
-  console.log(context.value);
+  initMouseEvent();
+  canvasHistory.value.push(canvas.value.toDataURL());
 });
 </script>
 <style lang="less" scoped>
