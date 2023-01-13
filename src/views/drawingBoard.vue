@@ -1,29 +1,66 @@
 <template>
   <div class="container">
-    <div class="aside">
-      <ToolList
+    <div class="top-bar">
+      <div class="title">
+        <img src="../assets/title.png" height="28" />
+      </div>
+      <div class="menu">我是菜单，但目前没什么菜单</div>
+      <div class="about">关于，但没什么好关于的</div>
+    </div>
+    <div class="tool-box"></div>
+
+    <div
+      class="tool-list"
+      :class="showTools ? '' : 'move'"
+      :style="showTools ? 'left: 0' : 'left: -360px'"
+    >
+      <ToolOption
         @on-option-change="optionChange"
         @redo="redo"
         @undo="undo"
-      ></ToolList>
+        @change-show-state="changeShowState"
+      ></ToolOption>
     </div>
     <div class="main">
-      <div class="canvasWrapper" ref="canvasWrapper">
+      <div class="canvas-wrapper" ref="canvasWrapper">
         <canvas ref="canvas" style="background: #fafafa"></canvas>
         <canvas ref="cache" style="display: none"></canvas>
       </div>
     </div>
+    <div class="button-group">
+      <ElButtonGroup>
+        <ElButton
+          size="small"
+          round
+          @click="undo"
+          :icon="ArrowLeftBold"
+          :disabled="step < 1"
+        />
+        <ElButton
+          size="small"
+          round
+          @click="redo"
+          :icon="ArrowRightBold"
+          :disabled="step >= canvasHistory.length - 1"
+        />
+      </ElButtonGroup>
+    </div>
   </div>
 </template>
 <script lang="ts" setup>
-import ToolList from "@/components/toolList.vue";
+import ToolOption from "@/components/toolOption.vue";
 import { ref, onMounted, computed, watch } from "vue";
 import { IAnyObject } from "@/interface/IAnyObject";
+import { ArrowLeftBold, ArrowRightBold } from "@element-plus/icons-vue";
+import { ElButton, ElButtonGroup } from "element-plus";
+
 // 画布ref
 const canvas = ref();
 // 画布包裹器ref
 const canvasWrapper = ref();
 const context = ref<CanvasRenderingContext2D>();
+// 工具配置栏显示状态
+const showTools = ref<boolean>(false);
 // 绘制状态
 const painting = ref<boolean>(false);
 // 最新位置坐标
@@ -40,10 +77,10 @@ const drawCircle = (x: number, y: number, radius: number) => {
 };
 // 绘制线条
 const drawLine = (x1: number, y1: number, x2: number, y2: number) => {
-  context.value.beginPath();
-  context.value.moveTo(x1, y1);
-  context.value.lineTo(x2, y2);
-  context.value.stroke();
+  context.value?.beginPath();
+  context.value?.moveTo(x1, y1);
+  context.value?.lineTo(x2, y2);
+  context.value?.stroke();
 };
 // 保存历史记录方法
 const saveHistory = () => {
@@ -108,38 +145,48 @@ const redo = () => {
     console.log("已经是最新的记录了");
   }
 };
+const changeShowState = (state: boolean) => {
+  showTools.value = state;
+};
 // 初始化画布
 const init = () => {
-  canvas.value.width = canvasWrapper.value.clientWidth - 40;
-  canvas.value.height = canvasWrapper.value.clientHeight - 40;
+  canvas.value.width = canvasWrapper.value.clientWidth;
+  canvas.value.height = canvasWrapper.value.clientHeight;
   context.value = canvas.value.getContext("2d");
-  context.value.lineWidth = 2;
+  if (context.value) {
+    context.value.lineWidth = 2;
+  }
 };
 // 初始化鼠标事件，目前只支持画线
 const initMouseEvent = () => {
   canvas.value.onmousedown = (e: MouseEvent) => {
+    if (e.button !== 0) return;
+    console.log(e, "mouseEvent");
     painting.value = true;
     lastPoint.value = { x: e.clientX, y: e.clientY };
   };
 
   canvas.value.onmousemove = (e: MouseEvent) => {
+    if (e.button !== 0) return;
+
     if (painting.value === true) {
       drawCircle(
-        lastPoint.value.x - 220,
-        lastPoint.value.y - 20,
-        context.value.lineWidth / 2
+        lastPoint.value.x - 70,
+        lastPoint.value.y - 70,
+        context.value ? context.value.lineWidth / 2 : 1
       );
       drawLine(
-        lastPoint.value.x - 220,
-        lastPoint.value.y - 20,
-        e.clientX - 220,
-        e.clientY - 20
+        lastPoint.value.x - 70,
+        lastPoint.value.y - 70,
+        e.clientX - 70,
+        e.clientY - 70
       );
       lastPoint.value = { x: e.clientX, y: e.clientY };
     }
   };
 
-  canvas.value.onmouseup = () => {
+  canvas.value.onmouseup = (e: MouseEvent) => {
+    if (e.button !== 0) return;
     saveHistory();
     painting.value = false;
   };
@@ -163,22 +210,98 @@ onMounted(() => {
 });
 </script>
 <style lang="less" scoped>
+@keyframes tip {
+  0%,
+  25% {
+    -webkit-transform: translateX(-1);
+    transform: translateX(-1);
+  }
+  5%,
+  15% {
+    -webkit-transform: translateX(-1px);
+    transform: translateX(-1px);
+  }
+  10%,
+  20% {
+    -webkit-transform: translateX(3px);
+    transform: translateX(3px);
+  }
+  30% {
+    -webkit-transform: translateX(0);
+    transform: translateX(0);
+  }
+}
 .container {
+  padding: 70px;
   width: 100%;
   height: 100%;
   display: flex;
-  .aside {
-    width: 200px;
-    height: 100%;
-    border-right: 2px solid #aaaaaaaa;
+  position: relative;
+  background: #252526;
+  background-image: linear-gradient(#252526 12px, transparent 0),
+    linear-gradient(90deg, #ccc 1px, transparent 0);
+  background-size: 13px 13px, 13px 13px;
+  .tool-list {
+    transition: all 0.4s;
+    position: absolute;
+    bottom: 30px;
+  }
+  .move {
+    animation: tip 4s infinite;
+  }
+  .top-bar {
+    position: absolute;
+    right: 0;
+    top: 0;
+    width: 100%;
+    height: 40px;
+    background: #666;
+    display: flex;
+    .title {
+      display: flex;
+      justify-content: center;
+      width: 110px;
+      height: 40px;
+      padding: 6px 16px;
+      border-right: 2px solid #cccccc77;
+    }
+    .menu {
+      padding: 0 20px;
+      display: flex;
+      align-items: center;
+      width: calc(90% - 110px);
+      border-right: 2px solid #cccccc77;
+      color: #ccc;
+    }
+    .about {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      width: 10%;
+      color: #ccc;
+    }
   }
   .main {
     height: 100%;
-    width: calc(100% - 200px);
-    .canvasWrapper {
+    width: 100%;
+    .canvas-wrapper {
       width: 100%;
       height: 100%;
-      padding: 20px;
+      border-radius: 12px;
+      overflow: hidden;
+    }
+  }
+  .button-group {
+    position: absolute;
+    left: 8px;
+    top: 44px;
+    .el-button {
+      padding: 8px;
+    }
+    .el-button:hover {
+      border: 1px solid #252526;
+      color: #fff;
+      background: #666666;
     }
   }
 }
