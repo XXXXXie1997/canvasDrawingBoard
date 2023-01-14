@@ -6,9 +6,7 @@
   >
     <div class="tool">
       <div class="tool-item">
-        <ElIcon :size="16">
-          <EditPen />
-        </ElIcon>
+        <component :is="props.currentTool.icon" size="16" />
         <div class="preview">
           <div
             class="point"
@@ -25,6 +23,7 @@
           :max="20"
         />
         <ElColorPicker
+          v-if="props.currentTool.name !== 'eraser'"
           v-model="option.color"
           size="small"
           color-format="hex"
@@ -33,26 +32,32 @@
       </div>
     </div>
     <div class="tip" style="width: 42px; height: 40px">
-      <ElIcon :size="22">
-        <Operation />
-      </ElIcon>
+      <icon-setting-config size="20" />
     </div>
   </div>
 </template>
 
 <script lang="ts" setup>
-import { ref, defineEmits } from "vue";
 import { IAnyObject } from "@/interface/IAnyObject";
-import { EditPen, Operation } from "@element-plus/icons-vue";
-import {
-  ElInputNumber,
-  ElColorPicker,
-  ElSelect,
-  ElOption,
-  ElIcon,
-} from "element-plus";
-
-const emit = defineEmits(["on-option-change", "change-show-state"]);
+import { ElInputNumber, ElColorPicker } from "element-plus";
+import { defineEmits, ref, defineProps, PropType } from "vue";
+const props = defineProps({
+  modelValue: {
+    type: Boolean as PropType<boolean>,
+    default: false,
+  },
+  currentTool: {
+    type: Object as PropType<IAnyObject>,
+    default: () => {
+      return {
+        icon: "icon-pencil",
+        name: "pencil",
+        tip: "铅笔",
+      };
+    },
+  },
+});
+const emit = defineEmits(["on-option-change", "update:modelValue"]);
 const option = ref<IAnyObject>({
   lineWidth: 2,
   color: "#000000",
@@ -61,14 +66,22 @@ const showState = ref<boolean>(false);
 const updateOption = () => {
   emit("on-option-change", option.value);
 };
+let timer = 0;
 const changeShowState = (state: boolean) => {
-  showState.value = state;
-  emit("change-show-state", showState.value);
+  if (!state) {
+    timer = setTimeout(() => {
+      showState.value = state;
+      emit("update:modelValue", showState.value);
+    }, 300);
+  } else {
+    clearTimeout(timer);
+    showState.value = state;
+    emit("update:modelValue", showState.value);
+  }
 };
 </script>
 
-<style scoped lang="less"></style>
-<style lang="less">
+<style scoped lang="less">
 .tools-container {
   width: 400px;
   height: 60px;
@@ -80,7 +93,6 @@ const changeShowState = (state: boolean) => {
   border-left: none;
   border-bottom-right-radius: 30px;
   border-top-right-radius: 30px;
-
   background: #f4f4f4;
   .left-icon {
     display: flex;

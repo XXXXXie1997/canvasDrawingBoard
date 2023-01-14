@@ -11,15 +11,17 @@
 
     <div
       class="tool-list"
-      :class="showTools ? '' : 'move'"
-      :style="showTools ? 'left: 0' : 'left: -360px'"
+      :class="showOption ? '' : 'move'"
+      :style="showOption ? 'left: 0' : 'left: -360px'"
     >
       <ToolOption
+        v-model="showOption"
+        :current-tool="currentTool"
         @on-option-change="optionChange"
-        @redo="redo"
-        @undo="undo"
-        @change-show-state="changeShowState"
       ></ToolOption>
+    </div>
+    <div class="tool-box" :style="showBox ? 'left: 0' : 'left: -53px'">
+      <ToolBox v-model="showBox" @on-tool-change="onToolChange"></ToolBox>
     </div>
     <div class="main">
       <div class="canvas-wrapper" ref="canvasWrapper">
@@ -49,6 +51,7 @@
 </template>
 <script lang="ts" setup>
 import ToolOption from "@/components/toolOption.vue";
+import ToolBox from "@/components/toolBox.vue";
 import { ref, onMounted, computed, watch } from "vue";
 import { IAnyObject } from "@/interface/IAnyObject";
 import { ArrowLeftBold, ArrowRightBold } from "@element-plus/icons-vue";
@@ -60,7 +63,9 @@ const canvas = ref();
 const canvasWrapper = ref();
 const context = ref<CanvasRenderingContext2D>();
 // 工具配置栏显示状态
-const showTools = ref<boolean>(false);
+const showOption = ref<boolean>(false);
+// 工具栏显示状态
+const showBox = ref<boolean>(false);
 // 绘制状态
 const painting = ref<boolean>(false);
 // 最新位置坐标
@@ -97,11 +102,16 @@ const computedOptions = computed(() => {
     strokeStyle: options.value.color,
   };
 });
+// 当前激活工具
+const currentTool = ref<IAnyObject>({});
 // 来自工具栏组件的配置信息
 const options = ref<IAnyObject>({});
 // 工具栏提供配置方法
 const optionChange = (option: IAnyObject) => {
   options.value = option;
+};
+const onToolChange = (tool: IAnyObject) => {
+  currentTool.value = tool;
 };
 // 缓存画布ref
 const cache = ref();
@@ -144,9 +154,6 @@ const redo = () => {
   } else {
     console.log("已经是最新的记录了");
   }
-};
-const changeShowState = (state: boolean) => {
-  showTools.value = state;
 };
 // 初始化画布
 const init = () => {
@@ -246,9 +253,14 @@ onMounted(() => {
     position: absolute;
     bottom: 30px;
   }
-  .move {
-    animation: tip 4s infinite;
+  .tool-box {
+    height: 70%;
+    transition: all 0.4s;
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
   }
+
   .top-bar {
     position: absolute;
     right: 0;
@@ -304,5 +316,8 @@ onMounted(() => {
       background: #666666;
     }
   }
+}
+.move {
+  animation: tip 4s infinite;
 }
 </style>

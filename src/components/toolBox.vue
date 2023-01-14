@@ -1,0 +1,115 @@
+<template>
+  <div
+    class="box-container"
+    @mouseenter="changeShowState(true)"
+    @mouseleave="changeShowState(false)"
+  >
+    <div class="arrow-block">
+      <icon-left></icon-left>
+    </div>
+    <div
+      class="item"
+      v-for="(item, index) in toolList"
+      :key="index"
+      :class="item.selected ? 'selected' : ''"
+      @click="selectTool(item, index)"
+    >
+      <ElTooltip :content="item.tip" placement="right">
+        <component :is="item.icon" size="20" />
+      </ElTooltip>
+    </div>
+  </div>
+</template>
+
+<script lang="ts" setup>
+import { IAnyObject } from "@/interface/IAnyObject";
+import { ElTooltip } from "element-plus";
+import { defineEmits, ref, defineProps, PropType } from "vue";
+const props = defineProps({
+  modelValue: {
+    type: Boolean as PropType<boolean>,
+    default: false,
+  },
+});
+const emit = defineEmits(["on-tool-change", "update:modelValue"]);
+
+const toolList = ref<
+  { icon: any; name: string; tip: string; selected: boolean }[]
+>([
+  { icon: "icon-pencil", name: "pencil", tip: "铅笔", selected: false },
+  { icon: "icon-clear-format", name: "eraser", tip: "橡皮", selected: false },
+]);
+// 计时器，主要用于组件展开收起操作优化
+let timer = 0;
+const changeShowState = (state: boolean) => {
+  // 鼠标移出时开始计时，500ms后改变显示状态。如果期间鼠标再次移入，则清空计时器，再次离开时重新计时
+  if (!state) {
+    timer = setTimeout(() => {
+      showState.value = state;
+      emit("update:modelValue", showState.value);
+    }, 500);
+  } else {
+    clearTimeout(timer);
+    showState.value = state;
+    emit("update:modelValue", showState.value);
+  }
+};
+const showState = ref<boolean>(false);
+const selectTool = (tool: IAnyObject, index: number) => {
+  for (let item of toolList.value) {
+    item.selected = false;
+  }
+  toolList.value[index].selected = true;
+  emit("on-tool-change", tool);
+};
+</script>
+<style scoped lang="less">
+.box-container {
+  padding: 6px;
+  width: 53px;
+  height: 100%;
+  border: 3px solid #3c3c3c;
+  border-left: none;
+  background: #f4f4f4;
+  border-bottom-right-radius: 10px;
+  border-top-right-radius: 10px;
+  position: relative;
+  z-index: 0;
+  .arrow-block {
+    position: absolute;
+    width: 29px;
+    height: 60px;
+    right: -29px;
+    top: 50%;
+    transform: translateY(-50%);
+    border: 1px solid red;
+    background: #f4f4f4;
+    border: 3px solid #3c3c3c;
+    border-left: none;
+    border-bottom-right-radius: 8px;
+    border-top-right-radius: 8px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1;
+  }
+  .item {
+    width: 38px;
+    height: 38px;
+    border-radius: 8px;
+    margin-bottom: 6px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  .item:hover {
+    transition: all 0.2s;
+    background: #666;
+    color: #fff;
+  }
+  .selected {
+    background: #666;
+    color: #fff;
+  }
+}
+</style>
