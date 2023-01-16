@@ -10,7 +10,7 @@
     <div class="tool-box"></div>
 
     <div
-      class="tool-list"
+      class="tool-option"
       :class="showOption ? '' : 'move'"
       :style="showOption ? 'left: 0' : 'left: -360px'"
     >
@@ -56,12 +56,14 @@ import { ref, onMounted, computed, watch } from "vue";
 import { IAnyObject } from "@/interface/IAnyObject";
 import { ArrowLeftBold, ArrowRightBold } from "@element-plus/icons-vue";
 import { ElButton, ElButtonGroup } from "element-plus";
+import { tools } from "./drawingBoard.help";
+import { ITool } from "@/interface/ITool";
 
 // 画布ref
 const canvas = ref();
 // 画布包裹器ref
 const canvasWrapper = ref();
-const context = ref<CanvasRenderingContext2D>();
+const context = ref<CanvasRenderingContext2D>({});
 // 工具配置栏显示状态
 const showOption = ref<boolean>(false);
 // 工具栏显示状态
@@ -73,20 +75,6 @@ const lastPoint = ref<{ x: number; y: number }>({ x: 0, y: 0 });
 // canvas历史记录数组和当前步骤数，每画一笔都会记录，用于撤销前进功能
 const canvasHistory = ref<string[]>([]);
 const step = ref(0);
-// 绘制圆点
-const drawCircle = (x: number, y: number, radius: number) => {
-  context.value?.beginPath();
-  context.value?.arc(x, y, radius, 0, Math.PI * 2);
-  context.value?.fill();
-  context.value?.closePath();
-};
-// 绘制线条
-const drawLine = (x1: number, y1: number, x2: number, y2: number) => {
-  context.value?.beginPath();
-  context.value?.moveTo(x1, y1);
-  context.value?.lineTo(x2, y2);
-  context.value?.stroke();
-};
 // 保存历史记录方法
 const saveHistory = () => {
   step.value++;
@@ -103,21 +91,26 @@ const computedOptions = computed(() => {
   };
 });
 // 当前激活工具
-const currentTool = ref<IAnyObject>({});
+const currentTool = ref<ITool>({
+  icon: "icon-pencil",
+  name: "铅笔",
+  key: "pencil",
+});
 // 来自工具栏组件的配置信息
 const options = ref<IAnyObject>({});
 // 工具栏提供配置方法
 const optionChange = (option: IAnyObject) => {
   options.value = option;
 };
-const onToolChange = (tool: IAnyObject) => {
+const onToolChange = (tool: ITool) => {
   currentTool.value = tool;
+  setTool(currentTool.value.key);
 };
 // 缓存画布ref
 const cache = ref();
 const cacheContext = ref<CanvasRenderingContext2D>();
 // 绘制缓存方法
-const setCache = async (imgSrc: any) => {
+const setCache = async (imgSrc: HTMLImageElement) => {
   cache.value.width = canvas.value.width;
   cache.value.height = canvas.value.height;
   cacheContext.value = cache.value.getContext("2d");
@@ -165,24 +158,19 @@ const init = () => {
   }
 };
 // 初始化鼠标事件，目前只支持画线
-const initMouseEvent = () => {
+const setTool = (toolKey: string) => {
   canvas.value.onmousedown = (e: MouseEvent) => {
     if (e.button !== 0) return;
-    console.log(e, "mouseEvent");
     painting.value = true;
     lastPoint.value = { x: e.clientX, y: e.clientY };
   };
-
   canvas.value.onmousemove = (e: MouseEvent) => {
     if (e.button !== 0) return;
-
     if (painting.value === true) {
-      drawCircle(
-        lastPoint.value.x - 70,
-        lastPoint.value.y - 70,
-        context.value ? context.value.lineWidth / 2 : 1
-      );
-      drawLine(
+      // 根据当前工具key设置鼠标移动事件
+      tools[toolKey](
+        canvas.value,
+        context.value,
         lastPoint.value.x - 70,
         lastPoint.value.y - 70,
         e.clientX - 70,
@@ -191,7 +179,6 @@ const initMouseEvent = () => {
       lastPoint.value = { x: e.clientX, y: e.clientY };
     }
   };
-
   canvas.value.onmouseup = (e: MouseEvent) => {
     if (e.button !== 0) return;
     saveHistory();
@@ -211,7 +198,7 @@ watch(
 );
 onMounted(() => {
   init();
-  initMouseEvent();
+  setTool(currentTool.value.key);
   // 储存一张空白画布作为历史记录的第一张，否则画板无法撤回至完全空白
   canvasHistory.value.push(canvas.value.toDataURL());
 });
@@ -248,10 +235,13 @@ onMounted(() => {
   background-image: linear-gradient(#252526 12px, transparent 0),
     linear-gradient(90deg, #ccc 1px, transparent 0);
   background-size: 13px 13px, 13px 13px;
-  .tool-list {
+  .tool-option {
     transition: all 0.4s;
     position: absolute;
     bottom: 30px;
+    &.move {
+      animation: tip 4s;
+    }
   }
   .tool-box {
     height: 70%;
@@ -316,8 +306,5 @@ onMounted(() => {
       background: #666666;
     }
   }
-}
-.move {
-  animation: tip 4s infinite;
 }
 </style>

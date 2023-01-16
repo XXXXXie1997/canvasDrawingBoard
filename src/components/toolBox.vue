@@ -14,8 +14,10 @@
       :class="item.selected ? 'selected' : ''"
       @click="selectTool(item, index)"
     >
-      <ElTooltip :content="item.tip" placement="right">
-        <component :is="item.icon" size="20" />
+      <ElTooltip :content="item.name" placement="right">
+        <div class="icon-wrapper">
+          <component :is="item.icon" size="20" />
+        </div>
       </ElTooltip>
     </div>
   </div>
@@ -23,6 +25,7 @@
 
 <script lang="ts" setup>
 import { IAnyObject } from "@/interface/IAnyObject";
+import { ITool } from "@/interface/ITool";
 import { ElTooltip } from "element-plus";
 import { defineEmits, ref, defineProps, PropType } from "vue";
 const props = defineProps({
@@ -33,11 +36,9 @@ const props = defineProps({
 });
 const emit = defineEmits(["on-tool-change", "update:modelValue"]);
 
-const toolList = ref<
-  { icon: any; name: string; tip: string; selected: boolean }[]
->([
-  { icon: "icon-pencil", name: "pencil", tip: "铅笔", selected: false },
-  { icon: "icon-clear-format", name: "eraser", tip: "橡皮", selected: false },
+const toolList = ref<ITool[]>([
+  { icon: "icon-pencil", key: "pencil", name: "铅笔", selected: true },
+  { icon: "icon-clear-format", key: "eraser", name: "橡皮", selected: false },
 ]);
 // 计时器，主要用于组件展开收起操作优化
 let timer = 0;
@@ -98,9 +99,13 @@ const selectTool = (tool: IAnyObject, index: number) => {
     height: 38px;
     border-radius: 8px;
     margin-bottom: 6px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
+    .icon-wrapper {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
   }
   .item:hover {
     transition: all 0.2s;

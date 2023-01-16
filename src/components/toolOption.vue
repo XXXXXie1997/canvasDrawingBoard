@@ -6,7 +6,6 @@
   >
     <div class="tool">
       <div class="tool-item">
-        <component :is="props.currentTool.icon" size="16" />
         <div class="preview">
           <div
             class="point"
@@ -32,7 +31,7 @@
       </div>
     </div>
     <div class="tip" style="width: 42px; height: 40px">
-      <icon-setting-config size="20" />
+      <component :is="props.currentTool.icon" size="16" />
     </div>
   </div>
 </template>
@@ -41,18 +40,20 @@
 import { IAnyObject } from "@/interface/IAnyObject";
 import { ElInputNumber, ElColorPicker } from "element-plus";
 import { defineEmits, ref, defineProps, PropType } from "vue";
+import { ITool } from "@/interface/ITool";
+
 const props = defineProps({
   modelValue: {
     type: Boolean as PropType<boolean>,
     default: false,
   },
   currentTool: {
-    type: Object as PropType<IAnyObject>,
+    type: Object as PropType<ITool>,
     default: () => {
       return {
         icon: "icon-pencil",
-        name: "pencil",
-        tip: "铅笔",
+        key: "pencil",
+        name: "铅笔",
       };
     },
   },
