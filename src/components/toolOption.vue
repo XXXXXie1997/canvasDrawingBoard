@@ -19,7 +19,7 @@
           style="margin-right: 8px; width: 80px"
           controls-position="right"
           :min="2"
-          :max="20"
+          :max="props.currentTool.key === 'eraser' ? 40 : 20"
         />
         <ElColorPicker
           v-if="props.currentTool.name !== 'eraser'"
