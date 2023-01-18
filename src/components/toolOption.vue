@@ -22,7 +22,7 @@
           :max="props.currentTool.key === 'eraser' ? 40 : 20"
         />
         <ElColorPicker
-          v-if="props.currentTool.name !== 'eraser'"
+          v-if="props.currentTool.key !== 'eraser'"
           v-model="option.color"
           size="small"
           color-format="hex"

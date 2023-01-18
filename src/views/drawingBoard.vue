@@ -4,7 +4,14 @@
       <div class="title">
         <img src="../assets/title.png" height="28" />
       </div>
-      <div class="menu">我是菜单，但目前没什么菜单</div>
+      <div class="menu">
+        <div class="menu-item" @click="savePicture">
+          <icon-download-four />保存为图片
+        </div>
+        <div class="menu-item" @click="cleanBoard">
+          <icon-refresh />清空画板
+        </div>
+      </div>
       <div class="about">关于，但没什么好关于的</div>
     </div>
     <div class="tool-box"></div>
@@ -130,8 +137,6 @@ const undo = () => {
       // 将缓存复制到画布上，通过这种方式可以解决画面闪动的问题
       context.value?.drawImage(cache.value, 0, 0);
     };
-  } else {
-    console.log("到头了");
   }
 };
 // 前进
@@ -144,8 +149,6 @@ const redo = () => {
       context.value?.clearRect(0, 0, canvas.value.width, canvas.value.height);
       context.value?.drawImage(canvasPic, 0, 0);
     };
-  } else {
-    console.log("已经是最新的记录了");
   }
 };
 // 初始化画布
@@ -153,9 +156,18 @@ const init = () => {
   canvas.value.width = canvasWrapper.value.clientWidth;
   canvas.value.height = canvasWrapper.value.clientHeight;
   context.value = canvas.value.getContext("2d");
-  if (context.value) {
-    context.value.lineWidth = 2;
-  }
+  context.value.lineWidth = 2;
+};
+const savePicture = () => {
+  let a: HTMLAnchorElement = document.createElement("a");
+  a.href = canvas.value.toDataURL("image/png");
+  a.download = "picture" + new Date().getTime();
+  a.click();
+};
+const cleanBoard = () => {
+  context.value.clearRect(0, 0, canvas.value.width, canvas.value.height);
+  // 将清空的画板保存为历史，否则无法撤回清空之前的一步
+  saveHistory();
 };
 // 初始化鼠标事件，目前只支持画线
 const setTool = (toolKey: string) => {
@@ -274,6 +286,24 @@ onMounted(() => {
       width: calc(90% - 110px);
       border-right: 2px solid #cccccc77;
       color: #ccc;
+      user-select: none;
+      .menu-item {
+        font-size: 14px;
+        width: 120px;
+        text-align: center;
+        height: 30px;
+        line-height: 30px;
+        border-radius: 8px;
+        &:hover {
+          transition: all 0.2s;
+          background: #fafafa;
+          color: #333;
+        }
+        &:active {
+          background: #ddd;
+          color: #000;
+        }
+      }
     }
     .about {
       display: flex;
