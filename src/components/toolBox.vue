@@ -5,7 +5,7 @@
     @mouseleave="changeShowState(false)"
   >
     <div class="arrow-block">
-      <icon-left></icon-left>
+      <icon-toolkit />
     </div>
     <div
       class="item"

@@ -32,7 +32,10 @@
     </div>
     <div class="main">
       <div class="canvas-wrapper" ref="canvasWrapper">
-        <canvas ref="canvas" style="background: #fafafa"></canvas>
+        <canvas
+          ref="canvas"
+          :style="`background-color: ${defaultBoardColor}`"
+        ></canvas>
         <canvas ref="cache" style="display: none"></canvas>
       </div>
     </div>
@@ -60,12 +63,12 @@
 import ToolOption from "@/components/toolOption.vue";
 import ToolBox from "@/components/toolBox.vue";
 import { ref, onMounted, computed, watch } from "vue";
-import { IAnyObject } from "@/interface/IAnyObject";
+import type { IAnyObject } from "@/interface/IAnyObject";
 import { ArrowLeftBold, ArrowRightBold } from "@element-plus/icons-vue";
 import { ElButton, ElButtonGroup } from "element-plus";
 import { tools } from "./drawingBoard.help";
-import { ITool } from "@/interface/ITool";
-
+import type { ITool } from "@/interface/ITool";
+const defaultBoardColor = "#fff";
 // 画布ref
 const canvas = ref();
 // 画布包裹器ref
@@ -80,15 +83,15 @@ const painting = ref<boolean>(false);
 // 最新位置坐标
 const lastPoint = ref<{ x: number; y: number }>({ x: 0, y: 0 });
 // canvas历史记录数组和当前步骤数，每画一笔都会记录，用于撤销前进功能
-const canvasHistory = ref<string[]>([]);
+let canvasHistory: string[] = [];
 const step = ref(0);
 // 保存历史记录方法
 const saveHistory = () => {
   step.value++;
-  if (step.value < canvasHistory.value.length) {
-    canvasHistory.value.length = step.value; // 截断数组
+  if (step.value < canvasHistory.length) {
+    canvasHistory.length = step.value; // 截断数组
   }
-  canvasHistory.value.push(canvas.value.toDataURL());
+  canvasHistory.push(canvas.value.toDataURL());
 };
 const computedOptions = computed(() => {
   return {
@@ -117,7 +120,7 @@ const onToolChange = (tool: ITool) => {
 const cache = ref();
 const cacheContext = ref<CanvasRenderingContext2D>();
 // 绘制缓存方法
-const setCache = async (imgSrc: HTMLImageElement) => {
+const setCache = (imgSrc: HTMLImageElement) => {
   cache.value.width = canvas.value.width;
   cache.value.height = canvas.value.height;
   cacheContext.value = cache.value.getContext("2d");
@@ -128,7 +131,7 @@ const undo = () => {
   if (step.value > 0) {
     step.value--;
     let canvasPic = new Image();
-    canvasPic.src = canvasHistory.value[step.value];
+    canvasPic.src = canvasHistory[step.value];
     canvasPic.onload = () => {
       // 设置缓存
       setCache(canvasPic);
@@ -141,10 +144,10 @@ const undo = () => {
 };
 // 前进
 const redo = () => {
-  if (step.value < canvasHistory.value.length - 1) {
+  if (step.value < canvasHistory.length - 1) {
     step.value++;
     let canvasPic = new Image();
-    canvasPic.src = canvasHistory.value[step.value];
+    canvasPic.src = canvasHistory[step.value];
     canvasPic.onload = () => {
       context.value?.clearRect(0, 0, canvas.value.width, canvas.value.height);
       context.value?.drawImage(canvasPic, 0, 0);
@@ -156,6 +159,9 @@ const init = () => {
   canvas.value.width = canvasWrapper.value.clientWidth;
   canvas.value.height = canvasWrapper.value.clientHeight;
   context.value = canvas.value.getContext("2d");
+  context.value.fillStyle = defaultBoardColor;
+  context.value.fillRect(0, 0, canvas.value.width, canvas.value.height);
+  context.value.fillStyle = "#000";
   context.value.lineWidth = 2;
 };
 const savePicture = () => {
@@ -171,6 +177,13 @@ const cleanBoard = () => {
 };
 // 初始化鼠标事件，目前只支持画线
 const setTool = (toolKey: string) => {
+  if (toolKey === "eraser") {
+    context.value.fillStyle = defaultBoardColor;
+    context.value.strokeStyle = defaultBoardColor;
+  } else {
+    context.value.fillStyle = options.value.color || "#000";
+    context.value.strokeStyle = options.value.color || "#000";
+  }
   canvas.value.onmousedown = (e: MouseEvent) => {
     if (e.button !== 0) return;
     painting.value = true;
@@ -212,7 +225,7 @@ onMounted(() => {
   init();
   setTool(currentTool.value.key);
   // 储存一张空白画布作为历史记录的第一张，否则画板无法撤回至完全空白
-  canvasHistory.value.push(canvas.value.toDataURL());
+  canvasHistory.push(canvas.value.toDataURL());
 });
 </script>
 <style lang="less" scoped>
